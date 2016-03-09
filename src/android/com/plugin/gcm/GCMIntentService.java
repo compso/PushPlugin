@@ -13,6 +13,10 @@ import android.os.Bundle;
 import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.content.res.Resources;
+
 import com.google.android.gcm.GCMBaseIntentService;
 
 @SuppressLint("NewApi")
@@ -98,10 +102,17 @@ public class GCMIntentService extends GCMBaseIntentService {
 			} catch (NumberFormatException e) {}
 		}
 		
+		Resources resources=context.getResources();
+		Bitmap appIconBitmap=BitmapFactory.decodeResource(resources,context.getApplicationInfo().icon);
+
+		int smallIconId=getResIdForDrawable(context,"res://ic_stat_not_icon");
+
+
 		NotificationCompat.Builder mBuilder =
 			new NotificationCompat.Builder(context)
 				.setDefaults(defaults)
-				.setSmallIcon(context.getApplicationInfo().icon)
+				.setLargeIcon(appIconBitmap)
+				.setSmallIcon(smallIconId)
 				.setWhen(System.currentTimeMillis())
 				.setContentTitle(extras.getString("title"))
 				.setTicker(extras.getString("title"))
@@ -149,5 +160,64 @@ public class GCMIntentService extends GCMBaseIntentService {
 	public void onError(Context context, String errorId) {
 		Log.e(TAG, "onError - errorId: " + errorId);
 	}
+
+
+    /**
+     * Resource ID for drawable.
+     *
+     * @param resPath
+     *      Resource path as string
+     */
+    int getResIdForDrawable(Context context, String resPath) {
+        int resId = getResIdForDrawable(context.getPackageName(), resPath);
+
+        if (resId == 0) {
+            resId = getResIdForDrawable("android", resPath);
+        }
+
+        return resId;
+    }
+
+    /**
+     * Resource ID for drawable.
+     *
+     * @param clsName
+     *      Relative package or global android name space
+     * @param resPath
+     *      Resource path as string
+     */
+    int getResIdForDrawable(String clsName, String resPath) {
+        String drawable = extractResourceName(resPath);
+        int resId = 0;
+
+        try {
+            Class<?> cls  = Class.forName(clsName + ".R$drawable");
+
+            resId = (Integer) cls.getDeclaredField(drawable).get(Integer.class);
+        } catch (Exception ignore) {}
+
+        return resId;
+    }
+
+    /**
+     * Extract name of drawable resource from path.
+     *
+     * @param resPath
+     *      Resource path as string
+     */
+    private String extractResourceName (String resPath) {
+        String drawable = resPath;
+
+        if (drawable.contains("/")) {
+            drawable = drawable.substring(drawable.lastIndexOf('/') + 1);
+        }
+
+        if (resPath.contains(".")) {
+            drawable = drawable.substring(0, drawable.lastIndexOf('.'));
+        }
+
+        return drawable;
+    }
+
 
 }
